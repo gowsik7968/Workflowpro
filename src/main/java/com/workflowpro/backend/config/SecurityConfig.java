@@ -1,13 +1,9 @@
 package com.workflowpro.backend.config;
-
 import com.workflowpro.backend.auth.filter.JwtAuthenticationFilter;
-
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.http.HttpMethod;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -32,18 +28,18 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
-    // ==============================
+    // ==================================================
     // PASSWORD ENCODER
-    // ==============================
+    // ==================================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ==============================
+    // ==================================================
     // CORS CONFIGURATION
-    // ==============================
+    // ==================================================
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -90,9 +86,9 @@ public class SecurityConfig {
         return source;
     }
 
-    // ==============================
+    // ==================================================
     // JWT FILTER REGISTRATION
-    // ==============================
+    // ==================================================
 
     @Bean
     public FilterRegistrationBean<JwtAuthenticationFilter>
@@ -104,14 +100,20 @@ public class SecurityConfig {
                 registration =
                 new FilterRegistrationBean<>(filter);
 
+        /*
+         * Disable normal servlet registration.
+         *
+         * The JWT filter is added manually below
+         * using addFilterBefore().
+         */
         registration.setEnabled(false);
 
         return registration;
     }
 
-    // ==============================
+    // ==================================================
     // SECURITY FILTER CHAIN
-    // ==============================
+    // ==================================================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -120,9 +122,9 @@ public class SecurityConfig {
 
         http
 
-                // ==============================
+                // ==================================================
                 // CORS
-                // ==============================
+                // ==================================================
 
                 .cors(cors ->
                         cors.configurationSource(
@@ -130,17 +132,62 @@ public class SecurityConfig {
                         )
                 )
 
-                // ==============================
+                // ==================================================
                 // CSRF
-                // ==============================
+                // ==================================================
 
+                /*
+                 * WorkFlowPro uses JWT authentication
+                 * with a REST API.
+                 *
+                 * CSRF is therefore disabled for this
+                 * stateless API.
+                 */
                 .csrf(csrf ->
                         csrf.disable()
                 )
 
-                // ==============================
+                // ==================================================
+                // HTTP BASIC
+                // ==================================================
+
+                /*
+                 * Disable Spring Boot's default
+                 * username/password Basic authentication.
+                 */
+                .httpBasic(httpBasic ->
+                        httpBasic.disable()
+                )
+
+                // ==================================================
+                // FORM LOGIN
+                // ==================================================
+
+                /*
+                 * Disable Spring Security's default
+                 * HTML login page.
+                 *
+                 * WorkFlowPro has its own React login page.
+                 */
+                .formLogin(formLogin ->
+                        formLogin.disable()
+                )
+
+                // ==================================================
+                // LOGOUT
+                // ==================================================
+
+                /*
+                 * Logout is handled by the React frontend
+                 * by removing the JWT from localStorage.
+                 */
+                .logout(logout ->
+                        logout.disable()
+                )
+
+                // ==================================================
                 // SESSION MANAGEMENT
-                // ==============================
+                // ==================================================
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -148,25 +195,25 @@ public class SecurityConfig {
                         )
                 )
 
-                // ==============================
+                // ==================================================
                 // AUTHORIZATION RULES
-                // ==============================
+                // ==================================================
 
                 .authorizeHttpRequests(auth ->
                         auth
 
-                                // ------------------------------
+                                // --------------------------------------------------
                                 // LOGIN + REGISTRATION
-                                // ------------------------------
+                                // --------------------------------------------------
 
                                 .requestMatchers(
                                         "/api/auth/**"
                                 )
                                 .permitAll()
 
-                                // ------------------------------
+                                // --------------------------------------------------
                                 // CORS PREFLIGHT
-                                // ------------------------------
+                                // --------------------------------------------------
 
                                 .requestMatchers(
                                         HttpMethod.OPTIONS,
@@ -174,26 +221,26 @@ public class SecurityConfig {
                                 )
                                 .permitAll()
 
-                                // ------------------------------
+                                // --------------------------------------------------
                                 // ADMIN APIs
-                                // ------------------------------
+                                // --------------------------------------------------
 
                                 .requestMatchers(
                                         "/api/admin/**"
                                 )
                                 .hasRole("ADMIN")
 
-                                // ------------------------------
+                                // --------------------------------------------------
                                 // ALL OTHER APIs
-                                // ------------------------------
+                                // --------------------------------------------------
 
                                 .anyRequest()
                                 .authenticated()
                 )
 
-                // ==============================
+                // ==================================================
                 // JWT AUTHENTICATION FILTER
-                // ==============================
+                // ==================================================
 
                 .addFilterBefore(
                         jwtAuthenticationFilter,
