@@ -1,4 +1,3 @@
-
 package com.workflowpro.backend.task.controller;
 
 import com.workflowpro.backend.task.dto.TaskRequestDTO;
@@ -59,16 +58,19 @@ public class TaskController {
             @Valid @RequestBody TaskRequestDTO request,
             Principal principal) {
 
+        System.out.println("CREATE TASK CONTROLLER CALLED");
+
         // Get authenticated user's email from JWT security context
         String email = principal.getName();
 
         // Find logged-in user from database
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Authenticated user not found"
-                        ));
+        User currentUser =
+                userRepository.findByEmail(email)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Authenticated user not found"
+                                ));
 
         // Creator ID comes from authenticated user
         TaskResponseDTO createdTask =
