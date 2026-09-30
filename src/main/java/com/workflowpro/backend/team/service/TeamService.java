@@ -37,9 +37,7 @@ public class TeamService {
         this.taskRepository = taskRepository;
     }
 
-    // =====================================
     // GET CURRENT USER
-    // =====================================
 
     private User getCurrentUser(String email) {
 
@@ -51,24 +49,19 @@ public class TeamService {
                 );
     }
 
-    // =====================================
     // GET TEAM
-    // =====================================
 
     private Team getTeam(Long id) {
 
         return teamRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException(
-                                "Team not found with ID: "
-                                        + id
+                                "Team not found with ID: " + id
                         )
                 );
     }
 
-    // =====================================
     // CHECK ROLE
-    // =====================================
 
     private boolean hasRole(
             User user,
@@ -80,10 +73,8 @@ public class TeamService {
         );
     }
 
-    // =====================================
     // CHECK TEAM MANAGEMENT PERMISSION
     // TEAM_LEAD / MANAGER / ADMIN
-    // =====================================
 
     private void checkTeamManagementPermission(
             User currentUser
@@ -104,9 +95,7 @@ public class TeamService {
         );
     }
 
-    // =====================================
     // CHECK TEAM DELETE PERMISSION
-    // =====================================
 
     private void checkDeletePermission(
             Team team,
@@ -132,9 +121,7 @@ public class TeamService {
         );
     }
 
-    // =====================================
     // CHECK TEAM ACCESS
-    // =====================================
 
     private void checkTeamAccess(
             Team team,
@@ -162,6 +149,7 @@ public class TeamService {
             // Managers and admins can view teams
             if (hasRole(currentUser, "MANAGER")
                     || hasRole(currentUser, "ADMIN")) {
+
                 return;
             }
 
@@ -171,9 +159,7 @@ public class TeamService {
         }
     }
 
-    // =====================================
     // TEAM → RESPONSE
-    // =====================================
 
     private TeamResponse toResponse(
             Team team
@@ -222,10 +208,8 @@ public class TeamService {
         );
     }
 
-    // =====================================
     // CREATE TEAM
     // TEAM_LEAD / MANAGER / ADMIN
-    // =====================================
 
     public TeamResponse createTeam(
             CreateTeamRequest request,
@@ -267,14 +251,16 @@ public class TeamService {
         return toResponse(savedTeam);
     }
 
-    // =====================================
     // GET MY TEAMS
-    // =====================================
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getMyTeams(
             String currentEmail
     ) {
+
+        System.out.println(
+                "GET MY TEAMS CALLED FOR: " + currentEmail
+        );
 
         User currentUser =
                 getCurrentUser(currentEmail);
@@ -299,9 +285,7 @@ public class TeamService {
                 .toList();
     }
 
-    // =====================================
     // GET TEAM DETAILS
-    // =====================================
 
     @Transactional(readOnly = true)
     public TeamResponse getTeamById(
@@ -320,9 +304,7 @@ public class TeamService {
         return toResponse(team);
     }
 
-    // =====================================
     // ADD MEMBER
-    // =====================================
 
     public TeamResponse addMember(
             Long teamId,
@@ -398,9 +380,7 @@ public class TeamService {
         return toResponse(savedTeam);
     }
 
-    // =====================================
     // REMOVE MEMBER
-    // =====================================
 
     public TeamResponse removeMember(
             Long teamId,
@@ -463,10 +443,8 @@ public class TeamService {
         return toResponse(savedTeam);
     }
 
-    // =====================================
     // DELETE TEAM
     // TEAM_LEAD OWN TEAM / ADMIN ANY
-    // =====================================
 
     public void deleteTeam(
             Long teamId,
@@ -490,9 +468,7 @@ public class TeamService {
         Long teamIdValue =
                 team.getId();
 
-        // =====================================
         // DETACH TASKS
-        // =====================================
 
         List<Task> tasks =
                 taskRepository
@@ -505,24 +481,18 @@ public class TeamService {
             taskRepository.save(task);
         }
 
-        // =====================================
         // REMOVE MEMBERS
-        // =====================================
 
         team.getMembers()
                 .clear();
 
         teamRepository.save(team);
 
-        // =====================================
         // DELETE TEAM
-        // =====================================
 
         teamRepository.delete(team);
 
-        // =====================================
         // ACTIVITY
-        // =====================================
 
         activityService.createActivity(
                 currentUser,
