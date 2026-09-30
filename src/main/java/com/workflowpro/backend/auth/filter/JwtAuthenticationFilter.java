@@ -60,6 +60,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader == null
                 || !authHeader.startsWith("Bearer ")) {
 
+            System.out.println(
+                    "NO JWT HEADER: " + request.getRequestURI()
+            );
+
             filterChain.doFilter(request, response);
             return;
         }
@@ -67,10 +71,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token =
                 authHeader.substring(7);
 
+        System.out.println("JWT TOKEN RECEIVED");
+
         try {
 
             String email =
                     jwtService.extractEmail(token);
+
+            System.out.println(
+                    "JWT EMAIL: " + email
+            );
 
             if (email != null
                     && SecurityContextHolder
@@ -81,10 +91,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         userRepository.findByEmail(email)
                                 .orElse(null);
 
+                System.out.println(
+                        "USER FOUND: " + (user != null)
+                );
+
                 if (user != null
                         && jwtService.isTokenValid(
                         token,
                         user)) {
+
+                    System.out.println(
+                            "JWT VALID - USER: "
+                                    + user.getEmail()
+                    );
 
                     SimpleGrantedAuthority authority =
                             new SimpleGrantedAuthority(
@@ -106,10 +125,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder
                             .getContext()
                             .setAuthentication(authentication);
+
+                    System.out.println(
+                            "SECURITY CONTEXT SET"
+                    );
                 }
             }
 
         } catch (JwtException | IllegalArgumentException ex) {
+
+            System.out.println(
+                    "JWT ERROR: "
+                            + ex.getClass().getSimpleName()
+                            + " - "
+                            + ex.getMessage()
+            );
 
             SecurityContextHolder.clearContext();
         }
