@@ -36,58 +36,61 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(
+            HttpServletRequest request) {
+
+        String path = request.getServletPath();
+
+        return path.startsWith("/api/auth/")
+                || "OPTIONS".equalsIgnoreCase(
+                request.getMethod()
+        );
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader =
+                request.getHeader("Authorization");
 
-        // If JWT is missing, continue the filter chain
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null
+                || !authHeader.startsWith("Bearer ")) {
+
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extract token from Authorization header
-        String token = authHeader.substring(7);
+        String token =
+                authHeader.substring(7);
 
         try {
 
-            // Get email from JWT
-            String email = jwtService.extractEmail(token);
+            String email =
+                    jwtService.extractEmail(token);
 
-            // Continue only if user is not already authenticated
-            if (email != null &&
-                    SecurityContextHolder.getContext()
-                            .getAuthentication() == null) {
+            if (email != null
+                    && SecurityContextHolder
+                    .getContext()
+                    .getAuthentication() == null) {
 
-                // Find user from database
-                User user = userRepository.findByEmail(email)
-                        .orElse(null);
+                User user =
+                        userRepository.findByEmail(email)
+                                .orElse(null);
 
-                // Validate token against the database user
-                if (user != null &&
-                        jwtService.isTokenValid(token, user)) {
+                if (user != null
+                        && jwtService.isTokenValid(
+                        token,
+                        user)) {
 
-                    /*
-                     * Convert database role into
-                     * Spring Security authority.
-                     *
-                     * Example:
-                     *
-                     * USER      -> ROLE_USER
-                     * ADMIN     -> ROLE_ADMIN
-                     * MANAGER   -> ROLE_MANAGER
-                     * TEAM_LEAD -> ROLE_TEAM_LEAD
-                     */
                     SimpleGrantedAuthority authority =
                             new SimpleGrantedAuthority(
                                     "ROLE_" + user.getRole()
                             );
 
-                    // Create authentication object
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     user.getEmail(),
@@ -100,19 +103,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     .buildDetails(request)
                     );
 
-                    // Store authentication in SecurityContext
-                    SecurityContextHolder.getContext()
+                    SecurityContextHolder
+                            .getContext()
                             .setAuthentication(authentication);
                 }
             }
 
         } catch (JwtException | IllegalArgumentException ex) {
 
-            // Invalid or expired token
             SecurityContextHolder.clearContext();
         }
 
-        // Continue request
         filterChain.doFilter(request, response);
     }
 }
