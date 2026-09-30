@@ -74,7 +74,6 @@ public class TeamService {
     }
 
     // CHECK TEAM MANAGEMENT PERMISSION
-    // TEAM_LEAD / MANAGER / ADMIN
 
     private void checkTeamManagementPermission(
             User currentUser
@@ -102,13 +101,12 @@ public class TeamService {
             User currentUser
     ) {
 
-        // ADMIN can delete any team
         if (hasRole(currentUser, "ADMIN")) {
             return;
         }
 
-        // TEAM_LEAD can delete own team
         if (hasRole(currentUser, "TEAM_LEAD")
+                && team.getOwner() != null
                 && team.getOwner()
                 .getId()
                 .equals(currentUser.getId())) {
@@ -129,15 +127,18 @@ public class TeamService {
     ) {
 
         boolean isOwner =
-                team.getOwner()
+                team.getOwner() != null
+                        && team.getOwner()
                         .getEmail()
                         .equalsIgnoreCase(email);
 
         boolean isMember =
-                team.getMembers()
+                team.getMembers() != null
+                        && team.getMembers()
                         .stream()
                         .anyMatch(user ->
-                                user.getEmail()
+                                user.getEmail() != null
+                                        && user.getEmail()
                                         .equalsIgnoreCase(email)
                         );
 
@@ -146,7 +147,6 @@ public class TeamService {
             User currentUser =
                     getCurrentUser(email);
 
-            // Managers and admins can view teams
             if (hasRole(currentUser, "MANAGER")
                     || hasRole(currentUser, "ADMIN")) {
 
@@ -159,18 +159,21 @@ public class TeamService {
         }
     }
 
-    // TEAM → RESPONSE
+    // TEAM TO RESPONSE
 
     private TeamResponse toResponse(
             Team team
     ) {
 
+        System.out.println(
+                "TEAM RESPONSE: "
+                        + team.getId()
+                        + " - "
+                        + team.getName()
+        );
+
         List<String> memberEmails =
-                team.getMembers()
-                        .stream()
-                        .map(User::getEmail)
-                        .sorted()
-                        .toList();
+                new ArrayList<>();
 
         List<TeamMemberDTO> members =
                 new ArrayList<>();
@@ -178,30 +181,61 @@ public class TeamService {
         User owner =
                 team.getOwner();
 
-        members.add(
-                new TeamMemberDTO(
-                        owner.getId(),
-                        owner.getFullName(),
-                        owner.getEmail()
-                )
-        );
+        if (owner != null) {
 
-        team.getMembers()
-                .stream()
-                .map(user ->
+            members.add(
+                    new TeamMemberDTO(
+                            owner.getId(),
+                            owner.getFullName(),
+                            owner.getEmail()
+                    )
+            );
+        }
+
+        if (team.getMembers() != null) {
+
+            System.out.println(
+                    "TEAM MEMBERS COUNT: "
+                            + team.getMembers().size()
+            );
+
+            for (User user : team.getMembers()) {
+
+                System.out.println(
+                        "TEAM MEMBER: "
+                                + user.getId()
+                                + " - "
+                                + user.getEmail()
+                );
+
+                if (user.getEmail() != null) {
+
+                    memberEmails.add(
+                            user.getEmail()
+                    );
+                }
+
+                members.add(
                         new TeamMemberDTO(
                                 user.getId(),
                                 user.getFullName(),
                                 user.getEmail()
                         )
-                )
-                .forEach(members::add);
+                );
+            }
+        }
+
+        memberEmails.sort(
+                String::compareToIgnoreCase
+        );
 
         return new TeamResponse(
                 team.getId(),
                 team.getName(),
                 team.getDescription(),
-                owner.getEmail(),
+                owner != null
+                        ? owner.getEmail()
+                        : null,
                 memberEmails,
                 members,
                 team.getCreatedAt()
@@ -209,7 +243,6 @@ public class TeamService {
     }
 
     // CREATE TEAM
-    // TEAM_LEAD / MANAGER / ADMIN
 
     public TeamResponse createTeam(
             CreateTeamRequest request,
@@ -219,7 +252,9 @@ public class TeamService {
         User owner =
                 getCurrentUser(currentEmail);
 
-        checkTeamManagementPermission(owner);
+        checkTeamManagementPermission(
+                owner
+        );
 
         Team team =
                 new Team();
@@ -259,13 +294,13 @@ public class TeamService {
     ) {
 
         System.out.println(
-                "GET MY TEAMS CALLED FOR: " + currentEmail
+                "GET MY TEAMS CALLED FOR: "
+                        + currentEmail
         );
 
         User currentUser =
                 getCurrentUser(currentEmail);
 
-        // ADMIN and MANAGER can see all teams
         if (hasRole(currentUser, "ADMIN")
                 || hasRole(currentUser, "MANAGER")) {
 
@@ -334,7 +369,8 @@ public class TeamService {
                                 )
                         );
 
-        if (team.getOwner()
+        if (team.getOwner() != null
+                && team.getOwner()
                 .getId()
                 .equals(member.getId())) {
 
@@ -344,7 +380,8 @@ public class TeamService {
         }
 
         boolean alreadyMember =
-                team.getMembers()
+                team.getMembers() != null
+                        && team.getMembers()
                         .stream()
                         .anyMatch(user ->
                                 user.getId()
@@ -444,7 +481,6 @@ public class TeamService {
     }
 
     // DELETE TEAM
-    // TEAM_LEAD OWN TEAM / ADMIN ANY
 
     public void deleteTeam(
             Long teamId,
@@ -483,8 +519,9 @@ public class TeamService {
 
         // REMOVE MEMBERS
 
-        team.getMembers()
-                .clear();
+        if (team.getMembers() != null) {
+            team.getMembers().clear();
+        }
 
         teamRepository.save(team);
 
@@ -506,3 +543,4 @@ public class TeamService {
         );
     }
 }
+
